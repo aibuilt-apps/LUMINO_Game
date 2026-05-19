@@ -537,7 +537,6 @@ header h1 em {
 <script>
 // ─────────────────────────────────────────────
 // PUZZLE DEFINITIONS
-// Each puzzle: { name, label (emoji art name), grid (0/1 2D array) }
 // ─────────────────────────────────────────────
 const PUZZLES = [
   {
@@ -634,7 +633,7 @@ const PUZZLES = [
 // STATE
 // ─────────────────────────────────────────────
 let currentPuzzleIdx = 0;
-let state = [];       // 'empty' | 'filled' | 'marked'
+let state = [];
 let solution = [];
 let rows = 5, cols = 5;
 let errors = 0;
@@ -643,7 +642,7 @@ let timerInterval = null;
 let elapsed = 0;
 let started = false;
 let solved = false;
-let bestTimes = {};   // key: puzzle name → seconds
+let bestTimes = {};
 
 const STORAGE_KEY = 'picross_bests_v1';
 
@@ -674,7 +673,7 @@ function getColClues(grid) {
 }
 
 // ─────────────────────────────────────────────
-// CLUE COMPLETION CHECK (for greying out)
+// CLUE COMPLETION CHECK
 // ─────────────────────────────────────────────
 function computeCurrentLine(cells) {
   return computeClues(cells.map(v => v === 'filled' ? 1 : 0));
@@ -755,12 +754,10 @@ function buildBoard() {
   const rowCluesData = getRowClues(solution);
   const colCluesData = getColClues(solution);
 
-  // clue width based on max clues in a row
   const maxRowClues = Math.max(...rowCluesData.map(c => c.length));
   const clueW = Math.max(40, maxRowClues * 20 + 8);
   document.documentElement.style.setProperty('--clue-w', clueW + 'px');
 
-  // col clues
   const colCluesEl = document.getElementById('colClues');
   colCluesEl.innerHTML = '';
   colCluesEl.style.marginLeft = (clueW + 3) + 'px';
@@ -777,7 +774,6 @@ function buildBoard() {
     colCluesEl.appendChild(div);
   });
 
-  // row clues
   const rowCluesEl = document.getElementById('rowClues');
   rowCluesEl.innerHTML = '';
   rowCluesData.forEach((clue, r) => {
@@ -793,7 +789,6 @@ function buildBoard() {
     rowCluesEl.appendChild(div);
   });
 
-  // grid
   const gridEl = document.getElementById('grid');
   gridEl.innerHTML = '';
   gridEl.style.gridTemplateColumns = `repeat(${cols}, var(--cell))`;
@@ -813,22 +808,17 @@ function buildBoard() {
     }
   }
 
-  // pixel preview
   buildPixelPreview();
 
-  // hints
   hints = 3;
   document.getElementById('hintCount').textContent = hints;
 
-  // best time
   const best = bestTimes[puzzle.name];
   document.getElementById('bestVal').textContent = best ? formatTime(best) : '—';
 
-  // errors
   errors = 0;
   document.getElementById('errorsVal').textContent = '0';
 
-  // solved banner
   document.getElementById('solvedBanner').classList.remove('show');
   solved = false;
 }
@@ -836,7 +826,7 @@ function buildBoard() {
 function buildPixelPreview() {
   const canvas = document.getElementById('pixelCanvas');
   canvas.innerHTML = '';
-  canvas.style.gridTemplateColumns = `repeat(${cols}, 12px)`;
+  canvas.style.gridTemplateColumns = `repeat(${cols}, 14px)`;
   canvas.classList.remove('show');
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
@@ -851,11 +841,11 @@ function buildPixelPreview() {
 // ─────────────────────────────────────────────
 // TOUCH SUPPORT
 // ─────────────────────────────────────────────
-let touchHandled = false;       // prevents ghost click after touchend
+let touchHandled = false;
 let longPressTimer = null;
-let longPressCell = null;       // [r, c] of the cell being held
-let dragFillMode = null;        // 'fill' | 'mark' | null — action decided on touchstart
-let dragVisited = new Set();    // cells touched during a drag
+let longPressCell = null;
+let dragFillMode = null;
+let dragVisited = new Set();
 
 const LONG_PRESS_MS = 450;
 
@@ -868,7 +858,6 @@ function handleTouchStart(e, r, c) {
 
   if (!started) { started = true; startTimer(); }
 
-  // Start long-press timer for marking
   longPressCell = [r, c];
   const cell = document.getElementById(`cell-${r}-${c}`);
   cell.classList.add('long-press-active');
@@ -877,9 +866,8 @@ function handleTouchStart(e, r, c) {
     longPressTimer = null;
     longPressCell = null;
     cell.classList.remove('long-press-active');
-    // Long press = toggle mark (right-click equivalent)
     if (!solved) {
-      dragFillMode = 'mark-only'; // suppress drag-fill for this gesture
+      dragFillMode = 'mark-only';
       handleRightClick(r, c);
     }
   }, LONG_PRESS_MS);
@@ -889,7 +877,6 @@ function handleTouchMove(e) {
   e.preventDefault();
   if (solved) return;
 
-  // Cancel long-press if finger moves
   if (longPressTimer) {
     clearTimeout(longPressTimer);
     longPressTimer = null;
@@ -898,7 +885,6 @@ function handleTouchMove(e) {
         ?.classList.remove('long-press-active');
       longPressCell = null;
     }
-    // First move after touchstart: decide drag action based on the origin cell state
     if (dragFillMode === null) {
       dragFillMode = 'fill';
     }
@@ -918,7 +904,6 @@ function handleTouchMove(e) {
   if (dragVisited.has(key)) return;
   dragVisited.add(key);
 
-  // During a drag, only fill cells that should be filled (no errors on drag)
   if (state[r][c] !== 'filled' && solution[r][c] === 1) {
     state[r][c] = 'filled';
     renderCell(r, c);
@@ -929,7 +914,6 @@ function handleTouchMove(e) {
 function handleTouchEnd(e, r, c) {
   e.preventDefault();
 
-  // Cancel long-press timer if still pending — this was a short tap
   if (longPressTimer) {
     clearTimeout(longPressTimer);
     longPressTimer = null;
@@ -938,7 +922,6 @@ function handleTouchEnd(e, r, c) {
         ?.classList.remove('long-press-active');
       longPressCell = null;
     }
-    // Short tap = fill (same as click)
     if (!solved) handleClick(r, c);
   }
 
@@ -948,8 +931,6 @@ function handleTouchEnd(e, r, c) {
   }
 
   dragFillMode = null;
-
-  // Suppress the synthetic click the browser fires after touch
   setTimeout(() => { touchHandled = false; }, 300);
 }
 
@@ -967,11 +948,9 @@ function handleClick(r, c) {
   } else if (cur === 'marked') {
     state[r][c] = 'filled';
   } else {
-    // check if correct
     if (solution[r][c] === 1) {
       state[r][c] = 'filled';
     } else {
-      // wrong fill
       errors++;
       document.getElementById('errorsVal').textContent = errors;
       const cell = document.getElementById(`cell-${r}-${c}`);
@@ -1050,7 +1029,6 @@ async function onSolved() {
   const puzzle = PUZZLES[currentPuzzleIdx];
   await saveBest(puzzle.name, elapsed);
 
-  // reveal animation
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       if (solution[r][c] === 1) {
@@ -1060,17 +1038,14 @@ async function onSolved() {
     }
   }
 
-  // show pixel preview
   const canvas = document.getElementById('pixelCanvas');
   for (let r = 0; r < rows; r++)
     for (let c = 0; c < cols; c++)
       document.getElementById(`px-${r}-${c}`)?.classList.toggle('on', solution[r][c] === 1);
   setTimeout(() => canvas.classList.add('show'), 400);
 
-  // confetti
   setTimeout(() => launchConfetti(), 300);
 
-  // banner
   setTimeout(() => {
     document.getElementById('solvedTime').textContent = 'Solved in ' + formatTime(elapsed) +
       (errors > 0 ? ` · ${errors} error${errors !== 1 ? 's' : ''}` : ' · No errors!');
@@ -1089,7 +1064,6 @@ async function onSolved() {
 function useHint() {
   if (hints <= 0 || solved) return;
 
-  // find an empty cell that should be filled
   const candidates = [];
   for (let r = 0; r < rows; r++)
     for (let c = 0; c < cols; c++)
@@ -1121,7 +1095,7 @@ function useHint() {
 // CONFETTI
 // ─────────────────────────────────────────────
 function launchConfetti() {
-  const colors = ['#D4522A', '#3B6D11', '#1A1814', '#E8A87C', '#85B7EB'];
+  const colors = ['#B8714A', '#4A8C52', '#263327', '#D4A882', '#85B7EB'];
   for (let i = 0; i < 60; i++) {
     setTimeout(() => {
       const p = document.createElement('div');
@@ -1179,7 +1153,6 @@ async function init() {
   document.getElementById('resetBtn').addEventListener('click', resetPuzzle);
   document.getElementById('nextBtn').addEventListener('click', nextPuzzle);
 
-  // prevent context menu on grid
   document.getElementById('grid').addEventListener('contextmenu', e => e.preventDefault());
 }
 
