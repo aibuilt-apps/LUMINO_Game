@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LUMINO</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #EEF2EE;
+  --surface: #F8FAF7;
+  --ink: #263327;
+  --ink2: #5C7A5E;
+  --ink3: #9DB89F;
+  --filled: #3A5E3D;
+  --accent: #B8714A;
+  --accent2: #D4A882;
+  --correct: #4A8C52;
+  --border: rgba(38,51,39,0.10);
+  --border2: rgba(38,51,39,0.06);
+  --cell: 56px;
+  --gap: 5px;
+}
+
+body {
+  font-family: 'DM Mono', monospace;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 56px 24px 80px;
+  user-select: none;
+}
+
+/* ── Header ── */
+header {
+  text-align: center;
+  margin-bottom: 48px;
+  animation: fadeUp .6s ease both;
+}
+header h1 {
+  font-family: 'Fraunces', serif;
+  font-size: 68px;
+  font-weight: 600;
+  letter-spacing: 10px;
+  text-transform: uppercase;
+  color: var(--ink);
+  line-height: 1;
+}
+header h1 em {
+  font-style: normal;
+  color: var(--accent);
+}
+.subtitle {
+  font-size: 13px;
+  color: var(--ink3);
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  margin-top: 14px;
+}
+.tagline {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: 18px;
+  color: var(--ink2);
+  letter-spacing: .01em;
+  margin-top: 6px;
+}
+
+/* ── Puzzle selector ── */
+.puzzle-selector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 36px;
+  flex-wrap: wrap;
+  justify-content: center;
+  animation: fadeUp .6s .08s ease both;
+}
+.puzzle-btn {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: .08em;
+  padding: 10px 22px;
+  border: 1.5px solid var(--border);
+  border-radius: 99px;
+  background: var(--surface);
+  color: var(--ink2);
+  cursor: pointer;
+  transition: all .22s;
+}
+.puzzle-btn:hover { border-color: var(--ink2); color: var(--ink); background: var(--bg); }
+.puzzle-btn.active { background: var(--filled); color: var(--surface); border-color: var(--filled); }
+.puzzle-btn.solved { border-color: var(--correct); color: var(--correct); }
+.puzzle-btn.active.solved { background: var(--correct); color: #fff; border-color: var(--correct); }
+
+/* ── Stats bar ── */
+.stats-bar {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  margin-bottom: 28px;
+  animation: fadeUp .6s .12s ease both;
+}
+.stat { display: flex; flex-direction: column; align-items: center; }
+.stat-val {
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--ink);
+  min-width: 60px;
+  text-align: center;
+}
+.stat-label { font-size: 11px; color: var(--ink3); letter-spacing: .12em; text-transform: uppercase; margin-top: 5px; }
+.stat-sep { width: 1px; height: 36px; background: var(--border); }
+
+/* ── Game board ── */
+.game-wrap {
+  animation: fadeUp .6s .16s ease both;
+  position: relative;
+}
+
+.board {
+  display: grid;
+  position: relative;
+}
+
+/* clue areas */
+.col-clues {
+  display: flex;
+  gap: var(--gap);
+  margin-left: calc(var(--clue-w, 56px) + var(--gap));
+}
+.col-clue {
+  width: var(--cell);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  padding-bottom: 10px;
+}
+.clue-num {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink2);
+  line-height: 1;
+  transition: color .25s;
+}
+.clue-num.done { color: var(--ink3); }
+
+.row-and-grid {
+  display: flex;
+  gap: var(--gap);
+}
+
+.row-clues {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  width: var(--clue-w, 56px);
+}
+.row-clue {
+  height: var(--cell);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding-right: 10px;
+}
+
+/* grid */
+.grid {
+  display: grid;
+  gap: var(--gap);
+}
+
+/* cell */
+.cell {
+  width: var(--cell);
+  height: var(--cell);
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  position: relative;
+  transition: background .18s, border-color .18s, transform .15s, box-shadow .18s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: var(--ink3);
+}
+.cell:hover {
+  border-color: var(--ink2);
+  box-shadow: 0 2px 10px rgba(38,51,39,0.08);
+}
+.cell.long-press-active {
+  border-color: var(--accent2);
+  transform: scale(0.90);
+}
+.cell.filled {
+  background: var(--filled);
+  border-color: var(--filled);
+  color: transparent;
+  box-shadow: 0 2px 8px rgba(58,94,61,0.22);
+}
+.cell.marked {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--ink3);
+}
+.cell.marked::after {
+  content: '×';
+  font-size: 20px;
+  color: var(--ink3);
+}
+.cell.error {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  box-shadow: none !important;
+  animation: shake .35s ease;
+}
+.cell.reveal {
+  animation: cellReveal .45s ease both;
+}
+
+/* thick borders every 5 cells for larger grids */
+.cell.thick-right { border-right-width: 2.5px; border-right-color: var(--ink3); }
+.cell.thick-bottom { border-bottom-width: 2.5px; border-bottom-color: var(--ink3); }
+
+/* ── Solved overlay ── */
+.solved-banner {
+  display: none;
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  pointer-events: none;
+}
+.solved-banner.show { display: flex; }
+.solved-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 24px;
+  padding: 32px 44px;
+  text-align: center;
+  pointer-events: all;
+  animation: popIn .45s cubic-bezier(.34,1.56,.64,1) both;
+  box-shadow: 0 12px 48px rgba(38,51,39,0.13);
+}
+.solved-title {
+  font-family: 'Fraunces', serif;
+  font-size: 34px;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--correct);
+  margin-bottom: 6px;
+}
+.solved-time { font-size: 14px; color: var(--ink2); margin-bottom: 18px; }
+.solved-img { font-size: 14px; color: var(--ink3); margin-bottom: 24px; letter-spacing: .05em; }
+.solved-btn {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  letter-spacing: .08em;
+  padding: 12px 28px;
+  border: 1.5px solid var(--filled);
+  border-radius: 99px;
+  background: var(--filled);
+  color: var(--surface);
+  cursor: pointer;
+  transition: all .2s;
+}
+.solved-btn:hover { background: var(--ink); border-color: var(--ink); }
+
+/* ── Hint button & actions ── */
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 28px;
+  justify-content: center;
+  flex-wrap: wrap;
+  animation: fadeUp .6s .2s ease both;
+}
+.action-btn {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: .08em;
+  padding: 11px 22px;
+  border: 1.5px solid var(--border);
+  border-radius: 99px;
+  background: var(--surface);
+  color: var(--ink2);
+  cursor: pointer;
+  transition: all .22s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.action-btn:hover { border-color: var(--ink2); color: var(--ink); box-shadow: 0 2px 10px rgba(38,51,39,0.07); }
+.action-btn.danger:hover { border-color: var(--accent); color: var(--accent); box-shadow: none; }
+.hint-count {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 99px;
+  font-size: 11px;
+  padding: 2px 8px;
+  line-height: 1.4;
+}
+
+/* ── Pixel preview (legend) ── */
+.pixel-preview {
+  margin-top: 36px;
+  text-align: center;
+  animation: fadeUp .6s .24s ease both;
+}
+.pixel-preview p {
+  font-size: 11px;
+  color: var(--ink3);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.pixel-canvas {
+  display: inline-grid;
+  gap: 3px;
+  border-radius: 8px;
+  overflow: hidden;
+  opacity: 0;
+  transform: scale(.9);
+  transition: opacity .7s ease, transform .7s ease;
+}
+.pixel-canvas.show { opacity: 1; transform: scale(1); }
+.px {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--surface);
+  transition: background .35s ease;
+}
+.px.on { background: var(--filled); }
+
+/* ── How to play ── */
+.how-to {
+  margin-top: 40px;
+  max-width: 460px;
+  border-top: 1px solid var(--border2);
+  padding-top: 24px;
+  animation: fadeUp .6s .28s ease both;
+}
+.how-to p {
+  font-size: 13px;
+  color: var(--ink3);
+  line-height: 1.8;
+  letter-spacing: .02em;
+}
+.how-to strong { color: var(--ink2); font-weight: 500; }
+
+/* ── Footer ── */
+.site-footer {
+  margin-top: 56px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border2);
+  text-align: center;
+  animation: fadeUp .6s .32s ease both;
+}
+.footer-made {
+  font-size: 11px;
+  color: var(--ink3);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.footer-name {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-top: 6px;
+  letter-spacing: .02em;
+}
+.footer-role {
+  font-size: 11px;
+  color: var(--ink3);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+.footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+.footer-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink2);
+  text-decoration: none;
+  letter-spacing: .04em;
+  transition: color .2s;
+}
+.footer-link:hover { color: var(--filled); }
+.footer-sep {
+  font-size: 12px;
+  color: var(--border);
+}
+
+/* ── Confetti ── */
+.confetti-piece {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 999;
+  animation: confettiFall linear forwards;
+}
+@keyframes confettiFall {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+/* ── Animations ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-4px); }
+  40%     { transform: translateX(4px); }
+  60%     { transform: translateX(-3px); }
+  80%     { transform: translateX(3px); }
+}
+@keyframes cellReveal {
+  0%   { transform: scale(0.6); opacity: 0; }
+  60%  { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes popIn {
+  from { transform: scale(.8); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>LU<em>MI</em>NO</h1>
+  <p class="subtitle">Pixel logic puzzles</p>
+  <p class="tagline">Reveal the light hidden in the grid</p>
+</header>
+
+<div class="puzzle-selector" id="puzzleSelector"></div>
+
+<div class="stats-bar">
+  <div class="stat">
+    <span class="stat-val" id="timerVal">0:00</span>
+    <span class="stat-label">Time</span>
+  </div>
+  <div class="stat-sep"></div>
+  <div class="stat">
+    <span class="stat-val" id="bestVal">—</span>
+    <span class="stat-label">Best</span>
+  </div>
+  <div class="stat-sep"></div>
+  <div class="stat">
+    <span class="stat-val" id="errorsVal">0</span>
+    <span class="stat-label">Errors</span>
+  </div>
+</div>
+
+<div class="game-wrap" id="gameWrap">
+  <div class="col-clues" id="colClues"></div>
+  <div class="row-and-grid">
+    <div class="row-clues" id="rowClues"></div>
+    <div class="grid" id="grid"></div>
+  </div>
+  <div class="solved-banner" id="solvedBanner">
+    <div class="solved-card">
+      <div class="solved-title">Solved!</div>
+      <div class="solved-time" id="solvedTime"></div>
+      <div class="solved-img" id="solvedImg"></div>
+      <button class="solved-btn" id="nextBtn">Next puzzle →</button>
+    </div>
+  </div>
+</div>
+
+<div class="actions">
+  <button class="action-btn" id="hintBtn">
+    Hint <span class="hint-count" id="hintCount">3</span>
+  </button>
+  <button class="action-btn danger" id="resetBtn">Reset</button>
+</div>
+
+<div class="pixel-preview">
+  <p>Pixel preview</p>
+  <div class="pixel-canvas" id="pixelCanvas"></div>
+</div>
+
+<div class="how-to">
+  <p>
+    <strong>Left click</strong> — fill a cell &nbsp;·&nbsp;
+    <strong>Right click</strong> — mark empty (×) &nbsp;·&nbsp;
+    <strong>Click filled</strong> — clear it<br>
+    Numbers show consecutive filled blocks in each row and column.
+    Blocks must appear in order with at least one gap between them.
+  </p>
+</div>
+
+<footer class="site-footer">
+  <p class="footer-made">Made by</p>
+  <p class="footer-name">Oz Soffy</p>
+  <p class="footer-role">Product Manager</p>
+  <div class="footer-links">
+    <a href="https://www.linkedin.com/in/ozsoffy/" target="_blank" rel="noopener" class="footer-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+      LinkedIn
+    </a>
+    <span class="footer-sep">·</span>
+    <a href="https://github.com/ozsoffy" target="_blank" rel="noopener" class="footer-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+      GitHub
+    </a>
+  </div>
+</footer>
+
+<script>
+// ─────────────────────────────────────────────
+// PUZZLE DEFINITIONS
+// Each puzzle: { name, label (emoji art name), grid (0/1 2D array) }
+// ─────────────────────────────────────────────
+const PUZZLES = [
+  {
+    name: 'Heart',
+    label: '♥ heart',
+    grid: [
+      [0,1,0,1,0],
+      [1,1,1,1,1],
+      [1,1,1,1,1],
+      [0,1,1,1,0],
+      [0,0,1,0,0],
+    ]
+  },
+  {
+    name: 'Arrow',
+    label: '↑ arrow',
+    grid: [
+      [0,0,1,0,0],
+      [0,1,1,1,0],
+      [1,0,1,0,1],
+      [0,0,1,0,0],
+      [0,0,1,0,0],
+    ]
+  },
+  {
+    name: 'Diamond',
+    label: '◆ diamond',
+    grid: [
+      [0,0,1,0,0],
+      [0,1,1,1,0],
+      [1,1,0,1,1],
+      [0,1,1,1,0],
+      [0,0,1,0,0],
+    ]
+  },
+  {
+    name: 'Cat',
+    label: '🐱 cat face',
+    grid: [
+      [1,0,0,0,1],
+      [1,1,1,1,1],
+      [1,0,1,0,1],
+      [1,1,1,1,1],
+      [0,1,0,1,0],
+    ]
+  },
+  {
+    name: 'Tree',
+    label: '🌲 pine tree',
+    grid: [
+      [0,0,1,0,0],
+      [0,1,1,1,0],
+      [1,1,1,1,1],
+      [0,0,1,0,0],
+      [0,0,1,0,0],
+    ]
+  },
+  {
+    name: 'Ship',
+    label: '🚀 rocket',
+    grid: [
+      [0,0,1,0,0],
+      [0,1,1,1,0],
+      [1,1,1,1,1],
+      [0,1,0,1,0],
+      [1,0,0,0,1],
+    ]
+  },
+  {
+    name: 'Crown',
+    label: '♛ crown',
+    grid: [
+      [1,0,1,0,1],
+      [1,0,1,0,1],
+      [1,1,1,1,1],
+      [1,1,1,1,1],
+      [0,1,1,1,0],
+    ]
+  },
+  {
+    name: 'Star',
+    label: '★ star',
+    grid: [
+      [0,0,1,0,0],
+      [1,1,1,1,1],
+      [0,1,1,1,0],
+      [1,0,1,0,1],
+      [0,0,0,0,0],
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let currentPuzzleIdx = 0;
+let state = [];       // 'empty' | 'filled' | 'marked'
+let solution = [];
+let rows = 5, cols = 5;
+let errors = 0;
+let hints = 3;
+let timerInterval = null;
+let elapsed = 0;
+let started = false;
+let solved = false;
+let bestTimes = {};   // key: puzzle name → seconds
+
+const STORAGE_KEY = 'picross_bests_v1';
+
+// ─────────────────────────────────────────────
+// CLUE COMPUTATION
+// ─────────────────────────────────────────────
+function computeClues(line) {
+  const clues = [];
+  let count = 0;
+  for (const cell of line) {
+    if (cell === 1) count++;
+    else if (count > 0) { clues.push(count); count = 0; }
+  }
+  if (count > 0) clues.push(count);
+  return clues.length ? clues : [0];
+}
+
+function getRowClues(grid) {
+  return grid.map(row => computeClues(row));
+}
+
+function getColClues(grid) {
+  const clues = [];
+  for (let c = 0; c < grid[0].length; c++) {
+    clues.push(computeClues(grid.map(r => r[c])));
+  }
+  return clues;
+}
+
+// ─────────────────────────────────────────────
+// CLUE COMPLETION CHECK (for greying out)
+// ─────────────────────────────────────────────
+function computeCurrentLine(cells) {
+  return computeClues(cells.map(v => v === 'filled' ? 1 : 0));
+}
+
+function cluesMatch(a, b) {
+  if (a.length !== b.length) return false;
+  return a.every((v, i) => v === b[i]);
+}
+
+// ─────────────────────────────────────────────
+// STORAGE
+// ─────────────────────────────────────────────
+async function loadBests() {
+  try {
+    const r = await window.storage.get(STORAGE_KEY);
+    if (r) bestTimes = JSON.parse(r.value);
+  } catch(e) { bestTimes = {}; }
+}
+
+async function saveBest(name, secs) {
+  if (!bestTimes[name] || secs < bestTimes[name]) {
+    bestTimes[name] = secs;
+    try { await window.storage.set(STORAGE_KEY, JSON.stringify(bestTimes)); } catch(e){}
+  }
+}
+
+// ─────────────────────────────────────────────
+// TIMER
+// ─────────────────────────────────────────────
+function startTimer() {
+  if (timerInterval) return;
+  timerInterval = setInterval(() => {
+    elapsed++;
+    document.getElementById('timerVal').textContent = formatTime(elapsed);
+  }, 1000);
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+}
+
+function resetTimer() {
+  stopTimer();
+  elapsed = 0;
+  started = false;
+  document.getElementById('timerVal').textContent = '0:00';
+}
+
+function formatTime(s) {
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+
+// ─────────────────────────────────────────────
+// BUILD UI
+// ─────────────────────────────────────────────
+function buildPuzzleSelector() {
+  const el = document.getElementById('puzzleSelector');
+  el.innerHTML = '';
+  PUZZLES.forEach((p, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'puzzle-btn' + (i === currentPuzzleIdx ? ' active' : '') +
+                    (bestTimes[p.name] ? ' solved' : '');
+    btn.textContent = p.name;
+    btn.addEventListener('click', () => loadPuzzle(i));
+    el.appendChild(btn);
+  });
+}
+
+function buildBoard() {
+  const puzzle = PUZZLES[currentPuzzleIdx];
+  solution = puzzle.grid;
+  rows = solution.length;
+  cols = solution[0].length;
+  state = Array.from({length: rows}, () => Array(cols).fill('empty'));
+
+  const rowCluesData = getRowClues(solution);
+  const colCluesData = getColClues(solution);
+
+  // clue width based on max clues in a row
+  const maxRowClues = Math.max(...rowCluesData.map(c => c.length));
+  const clueW = Math.max(40, maxRowClues * 20 + 8);
+  document.documentElement.style.setProperty('--clue-w', clueW + 'px');
+
+  // col clues
+  const colCluesEl = document.getElementById('colClues');
+  colCluesEl.innerHTML = '';
+  colCluesEl.style.marginLeft = (clueW + 3) + 'px';
+  colCluesData.forEach((clue, c) => {
+    const div = document.createElement('div');
+    div.className = 'col-clue';
+    div.id = `cc-${c}`;
+    clue.forEach(n => {
+      const span = document.createElement('span');
+      span.className = 'clue-num';
+      span.textContent = n === 0 ? '' : n;
+      div.appendChild(span);
+    });
+    colCluesEl.appendChild(div);
+  });
+
+  // row clues
+  const rowCluesEl = document.getElementById('rowClues');
+  rowCluesEl.innerHTML = '';
+  rowCluesData.forEach((clue, r) => {
+    const div = document.createElement('div');
+    div.className = 'row-clue';
+    div.id = `rc-${r}`;
+    clue.forEach(n => {
+      const span = document.createElement('span');
+      span.className = 'clue-num';
+      span.textContent = n === 0 ? '' : n;
+      div.appendChild(span);
+    });
+    rowCluesEl.appendChild(div);
+  });
+
+  // grid
+  const gridEl = document.getElementById('grid');
+  gridEl.innerHTML = '';
+  gridEl.style.gridTemplateColumns = `repeat(${cols}, var(--cell))`;
+  gridEl.style.gap = 'var(--gap)';
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.id = `cell-${r}-${c}`;
+      cell.addEventListener('click', () => handleClick(r, c));
+      cell.addEventListener('contextmenu', e => { e.preventDefault(); handleRightClick(r, c); });
+      cell.addEventListener('touchstart', e => handleTouchStart(e, r, c), { passive: false });
+      cell.addEventListener('touchmove', e => handleTouchMove(e), { passive: false });
+      cell.addEventListener('touchend', e => handleTouchEnd(e, r, c), { passive: false });
+      gridEl.appendChild(cell);
+    }
+  }
+
+  // pixel preview
+  buildPixelPreview();
+
+  // hints
+  hints = 3;
+  document.getElementById('hintCount').textContent = hints;
+
+  // best time
+  const best = bestTimes[puzzle.name];
+  document.getElementById('bestVal').textContent = best ? formatTime(best) : '—';
+
+  // errors
+  errors = 0;
+  document.getElementById('errorsVal').textContent = '0';
+
+  // solved banner
+  document.getElementById('solvedBanner').classList.remove('show');
+  solved = false;
+}
+
+function buildPixelPreview() {
+  const canvas = document.getElementById('pixelCanvas');
+  canvas.innerHTML = '';
+  canvas.style.gridTemplateColumns = `repeat(${cols}, 12px)`;
+  canvas.classList.remove('show');
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const px = document.createElement('div');
+      px.className = 'px';
+      px.id = `px-${r}-${c}`;
+      canvas.appendChild(px);
+    }
+  }
+}
+
+// ─────────────────────────────────────────────
+// TOUCH SUPPORT
+// ─────────────────────────────────────────────
+let touchHandled = false;       // prevents ghost click after touchend
+let longPressTimer = null;
+let longPressCell = null;       // [r, c] of the cell being held
+let dragFillMode = null;        // 'fill' | 'mark' | null — action decided on touchstart
+let dragVisited = new Set();    // cells touched during a drag
+
+const LONG_PRESS_MS = 450;
+
+function handleTouchStart(e, r, c) {
+  e.preventDefault();
+  touchHandled = true;
+  dragFillMode = null;
+  dragVisited = new Set();
+  dragVisited.add(`${r},${c}`);
+
+  if (!started) { started = true; startTimer(); }
+
+  // Start long-press timer for marking
+  longPressCell = [r, c];
+  const cell = document.getElementById(`cell-${r}-${c}`);
+  cell.classList.add('long-press-active');
+
+  longPressTimer = setTimeout(() => {
+    longPressTimer = null;
+    longPressCell = null;
+    cell.classList.remove('long-press-active');
+    // Long press = toggle mark (right-click equivalent)
+    if (!solved) {
+      dragFillMode = 'mark-only'; // suppress drag-fill for this gesture
+      handleRightClick(r, c);
+    }
+  }, LONG_PRESS_MS);
+}
+
+function handleTouchMove(e) {
+  e.preventDefault();
+  if (solved) return;
+
+  // Cancel long-press if finger moves
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+    if (longPressCell) {
+      document.getElementById(`cell-${longPressCell[0]}-${longPressCell[1]}`)
+        ?.classList.remove('long-press-active');
+      longPressCell = null;
+    }
+    // First move after touchstart: decide drag action based on the origin cell state
+    if (dragFillMode === null) {
+      dragFillMode = 'fill';
+    }
+  }
+
+  if (dragFillMode !== 'fill') return;
+
+  const touch = e.touches[0];
+  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (!el || !el.id) return;
+
+  const m = el.id.match(/^cell-(\d+)-(\d+)$/);
+  if (!m) return;
+
+  const r = +m[1], c = +m[2];
+  const key = `${r},${c}`;
+  if (dragVisited.has(key)) return;
+  dragVisited.add(key);
+
+  // During a drag, only fill cells that should be filled (no errors on drag)
+  if (state[r][c] !== 'filled' && solution[r][c] === 1) {
+    state[r][c] = 'filled';
+    renderCell(r, c);
+    updatePixelPreview(r, c);
+  }
+}
+
+function handleTouchEnd(e, r, c) {
+  e.preventDefault();
+
+  // Cancel long-press timer if still pending — this was a short tap
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+    if (longPressCell) {
+      document.getElementById(`cell-${longPressCell[0]}-${longPressCell[1]}`)
+        ?.classList.remove('long-press-active');
+      longPressCell = null;
+    }
+    // Short tap = fill (same as click)
+    if (!solved) handleClick(r, c);
+  }
+
+  if (dragFillMode === 'fill') {
+    updateClueHighlights();
+    checkSolved();
+  }
+
+  dragFillMode = null;
+
+  // Suppress the synthetic click the browser fires after touch
+  setTimeout(() => { touchHandled = false; }, 300);
+}
+
+// ─────────────────────────────────────────────
+// INTERACTION
+// ─────────────────────────────────────────────
+function handleClick(r, c) {
+  if (solved) return;
+  if (touchHandled) return;
+  if (!started) { started = true; startTimer(); }
+
+  const cur = state[r][c];
+  if (cur === 'filled') {
+    state[r][c] = 'empty';
+  } else if (cur === 'marked') {
+    state[r][c] = 'filled';
+  } else {
+    // check if correct
+    if (solution[r][c] === 1) {
+      state[r][c] = 'filled';
+    } else {
+      // wrong fill
+      errors++;
+      document.getElementById('errorsVal').textContent = errors;
+      const cell = document.getElementById(`cell-${r}-${c}`);
+      cell.classList.add('error');
+      setTimeout(() => { cell.classList.remove('error'); }, 400);
+      return;
+    }
+  }
+
+  renderCell(r, c);
+  updateClueHighlights();
+  updatePixelPreview(r, c);
+  checkSolved();
+}
+
+function handleRightClick(r, c) {
+  if (solved) return;
+  if (!started) { started = true; startTimer(); }
+  const cur = state[r][c];
+  if (cur === 'filled') return;
+  state[r][c] = cur === 'marked' ? 'empty' : 'marked';
+  renderCell(r, c);
+}
+
+function renderCell(r, c) {
+  const cell = document.getElementById(`cell-${r}-${c}`);
+  cell.className = 'cell';
+  const s = state[r][c];
+  if (s === 'filled') cell.classList.add('filled');
+  else if (s === 'marked') cell.classList.add('marked');
+}
+
+function updatePixelPreview(r, c) {
+  const px = document.getElementById(`px-${r}-${c}`);
+  if (px) px.classList.toggle('on', state[r][c] === 'filled');
+}
+
+function updateClueHighlights() {
+  const rowCluesData = getRowClues(solution);
+  const colCluesData = getColClues(solution);
+
+  for (let r = 0; r < rows; r++) {
+    const cur = computeCurrentLine(state[r]);
+    const el = document.getElementById(`rc-${r}`);
+    if (el) el.querySelectorAll('.clue-num').forEach(s => {
+      s.classList.toggle('done', cluesMatch(cur, rowCluesData[r]));
+    });
+  }
+  for (let c = 0; c < cols; c++) {
+    const col = state.map(row => row[c]);
+    const cur = computeCurrentLine(col);
+    const el = document.getElementById(`cc-${c}`);
+    if (el) el.querySelectorAll('.clue-num').forEach(s => {
+      s.classList.toggle('done', cluesMatch(cur, colCluesData[c]));
+    });
+  }
+}
+
+// ─────────────────────────────────────────────
+// SOLVE CHECK
+// ─────────────────────────────────────────────
+function checkSolved() {
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (solution[r][c] === 1 && state[r][c] !== 'filled') return;
+      if (solution[r][c] === 0 && state[r][c] === 'filled') return;
+    }
+  }
+  onSolved();
+}
+
+async function onSolved() {
+  solved = true;
+  stopTimer();
+
+  const puzzle = PUZZLES[currentPuzzleIdx];
+  await saveBest(puzzle.name, elapsed);
+
+  // reveal animation
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (solution[r][c] === 1) {
+        const cell = document.getElementById(`cell-${r}-${c}`);
+        setTimeout(() => cell.classList.add('reveal'), (r * cols + c) * 40);
+      }
+    }
+  }
+
+  // show pixel preview
+  const canvas = document.getElementById('pixelCanvas');
+  for (let r = 0; r < rows; r++)
+    for (let c = 0; c < cols; c++)
+      document.getElementById(`px-${r}-${c}`)?.classList.toggle('on', solution[r][c] === 1);
+  setTimeout(() => canvas.classList.add('show'), 400);
+
+  // confetti
+  setTimeout(() => launchConfetti(), 300);
+
+  // banner
+  setTimeout(() => {
+    document.getElementById('solvedTime').textContent = 'Solved in ' + formatTime(elapsed) +
+      (errors > 0 ? ` · ${errors} error${errors !== 1 ? 's' : ''}` : ' · No errors!');
+    document.getElementById('solvedImg').textContent = puzzle.label;
+    document.getElementById('solvedBanner').classList.add('show');
+
+    const best = bestTimes[puzzle.name];
+    document.getElementById('bestVal').textContent = best ? formatTime(best) : '—';
+    buildPuzzleSelector();
+  }, rows * cols * 40 + 200);
+}
+
+// ─────────────────────────────────────────────
+// HINT
+// ─────────────────────────────────────────────
+function useHint() {
+  if (hints <= 0 || solved) return;
+
+  // find an empty cell that should be filled
+  const candidates = [];
+  for (let r = 0; r < rows; r++)
+    for (let c = 0; c < cols; c++)
+      if (solution[r][c] === 1 && state[r][c] !== 'filled')
+        candidates.push([r, c]);
+
+  if (!candidates.length) return;
+
+  if (!started) { started = true; startTimer(); }
+
+  const [r, c] = candidates[Math.floor(Math.random() * candidates.length)];
+  state[r][c] = 'filled';
+  renderCell(r, c);
+
+  const cell = document.getElementById(`cell-${r}-${c}`);
+  cell.classList.add('reveal');
+  setTimeout(() => cell.classList.remove('reveal'), 400);
+
+  updateClueHighlights();
+  updatePixelPreview(r, c);
+  checkSolved();
+
+  hints--;
+  document.getElementById('hintCount').textContent = hints;
+  if (hints <= 0) document.getElementById('hintBtn').style.opacity = '.4';
+}
+
+// ─────────────────────────────────────────────
+// CONFETTI
+// ─────────────────────────────────────────────
+function launchConfetti() {
+  const colors = ['#D4522A', '#3B6D11', '#1A1814', '#E8A87C', '#85B7EB'];
+  for (let i = 0; i < 60; i++) {
+    setTimeout(() => {
+      const p = document.createElement('div');
+      p.className = 'confetti-piece';
+      p.style.cssText = `
+        left: ${Math.random() * 100}vw;
+        top: -10px;
+        background: ${colors[Math.floor(Math.random() * colors.length)]};
+        transform: rotate(${Math.random() * 360}deg);
+        animation-duration: ${0.8 + Math.random() * 1.2}s;
+        animation-delay: ${Math.random() * 0.4}s;
+        width: ${5 + Math.random() * 8}px;
+        height: ${5 + Math.random() * 8}px;
+      `;
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 2500);
+    }, i * 20);
+  }
+}
+
+// ─────────────────────────────────────────────
+// RESET
+// ─────────────────────────────────────────────
+function resetPuzzle() {
+  resetTimer();
+  buildBoard();
+}
+
+// ─────────────────────────────────────────────
+// LOAD PUZZLE
+// ─────────────────────────────────────────────
+function loadPuzzle(idx) {
+  currentPuzzleIdx = idx;
+  resetTimer();
+  buildBoard();
+  buildPuzzleSelector();
+}
+
+// ─────────────────────────────────────────────
+// NEXT PUZZLE
+// ─────────────────────────────────────────────
+function nextPuzzle() {
+  loadPuzzle((currentPuzzleIdx + 1) % PUZZLES.length);
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+async function init() {
+  await loadBests();
+  buildPuzzleSelector();
+  buildBoard();
+
+  document.getElementById('hintBtn').addEventListener('click', useHint);
+  document.getElementById('resetBtn').addEventListener('click', resetPuzzle);
+  document.getElementById('nextBtn').addEventListener('click', nextPuzzle);
+
+  // prevent context menu on grid
+  document.getElementById('grid').addEventListener('contextmenu', e => e.preventDefault());
+}
+
+init();
+</script>
+</body>
+</html>
